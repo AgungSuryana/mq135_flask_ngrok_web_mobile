@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Sensor MQ-135</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        #loading {
+            font-size: 18px;
+            color: #555;
+        }
+
+        #data-display {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .sensor-box {
+            background-color: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: left;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .sensor-box.large {
+            width: 90%;
+        }
+
+        .sensor-box.small {
+            flex: 1;
+            max-width: 48%;
+            /* Lebar sama untuk Gas dan Voltage */
+            box-sizing: border-box;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10%;
+            /* Jarak antar box */
+        }
+
+        .sensor-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e88e5;
+        }
+
+        .sensor-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+      
+    </style>
+</head>
+
+<body>
+
+    <h2>Data Sensor MQ-135</h2>
+    <p id="loading">Memuat data...</p>
+
+    <div id="data-display">
+        <div class="row">
+            <div class="sensor-box small" id="gasBox">
+                <div class="sensor-title">Gas Level</div>
+                <div class="sensor-value" id="gasLevel">N/A</div>
+            </div>
+            <div class="sensor-box small" id="voltageBox">
+                <div class="sensor-title">Voltage</div>
+                <div class="sensor-value" id="voltage">N/A</div>
+            </div>
+        </div>
+        <div class="sensor-box large" id="timestampBox">
+            <div class="sensor-title">Timestamp</div>
+            <div class="sensor-value" id="timestamp">N/A</div>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi untuk mengambil data dari API Node.js
+        function fetchData() {
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        const latestData = data[0];  // Ambil data terbaru
+
+                        // Update elemen dengan data terbaru
+                        document.getElementById('gasLevel').innerText = latestData.gasLevel;
+                        document.getElementById('voltage').innerText = latestData.voltage;
+                        document.getElementById('timestamp').innerText = latestData.timestamp;
+
+                        // Menyembunyikan pesan loading setelah data berhasil dimuat
+                        document.getElementById('loading').style.display = 'none';
+                    } else {
+                        document.getElementById('loading').innerText = 'Tidak ada data tersedia';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById('loading').innerText = 'Gagal memuat data';
+                });
+        }
+
+        // Ambil data setiap 5 detik
+        setInterval(fetchData, 5000);
+        window.onload = fetchData;  // Ambil data pertama kali saat halaman dimuat
+    </script>
+
+</body>
+
+</html>
