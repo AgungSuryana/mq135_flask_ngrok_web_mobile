@@ -45,7 +45,7 @@
 
         .sensor-box.small {
             flex: 1;
-            max-width: 48%;
+            max-width: 100%;
             /* Lebar sama untuk Gas dan Voltage */
             box-sizing: border-box;
         }
@@ -84,10 +84,6 @@
                 <div class="sensor-title">Gas Level</div>
                 <div class="sensor-value" id="gasLevel">N/A</div>
             </div>
-            <div class="sensor-box small" id="voltageBox">
-                <div class="sensor-title">Voltage</div>
-                <div class="sensor-value" id="voltage">N/A</div>
-            </div>
         </div>
         <div class="sensor-box large" id="timestampBox">
             <div class="sensor-title">Timestamp</div>
@@ -106,7 +102,6 @@
 
                         // Update elemen dengan data terbaru
                         document.getElementById('gasLevel').innerText = latestData.gasLevel;
-                        document.getElementById('voltage').innerText = latestData.voltage;
                         document.getElementById('timestamp').innerText = latestData.timestamp;
 
                         // Menyembunyikan pesan loading setelah data berhasil dimuat

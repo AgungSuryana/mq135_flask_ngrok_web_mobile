@@ -10,10 +10,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Route untuk mengambil data dari Flask API
 app.get('/api/data', async (req, res) => {
     try {
-        const response = await axios.get('https://e455-125-164-21-68.ngrok-free.app/api/data');  // URL API Flask
+        const response = await axios.get('https://f580-125-164-25-162.ngrok-free.app/api/data');  // URL API Flask
         res.json(response.data);
     } catch (error) {
-        console.error('Error fetching data from Flask API:', error);
+        console.error('Error fetching data from Flask API:',);
         res.status(500).json({ error: 'Gagal mengambil data' });
     }
 });

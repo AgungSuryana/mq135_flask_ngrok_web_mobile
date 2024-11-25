@@ -4,79 +4,63 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Data Sensor MQ-135',
+      title: 'Dynamic Battery Visualization',
+      debugShowCheckedModeBanner: false, // Menghilangkan logo debug
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.green,
       ),
-      home: SensorDataScreen(),
+      home: const SensorDataScreen(),
     );
   }
 }
 
 class SensorDataScreen extends StatefulWidget {
+  const SensorDataScreen({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _SensorDataScreenState createState() => _SensorDataScreenState();
 }
 
 class _SensorDataScreenState extends State<SensorDataScreen> {
-  String gasLevel = 'N/A';
-  String voltage = 'N/A';
-  String timestamp = 'N/A';
+  double gasLevel = 0.0;
+  List<dynamic> sensorData = [];
   bool isLoading = true;
-  bool isRefreshing = false;
   Timer? timer;
 
   Future<void> fetchData() async {
     try {
-      setState(() {
-        isRefreshing = true;
-      });
-
-      print('Fetching data...');
       final response = await http.get(
-          Uri.parse('https://e455-125-164-21-68.ngrok-free.app/api/data'));
+        Uri.parse('https://f580-125-164-25-162.ngrok-free.app/api/data'),
+      );
 
       if (response.statusCode == 200) {
-        List data = json.decode(response.body);
-        if (data.isNotEmpty) {
-          setState(() {
-            gasLevel = data[0]['gasLevel'].toString();
-            voltage = data[0]['voltage'].toString();
-            timestamp = data[0]['timestamp'];
-            isLoading = false;
-          });
-          print(
-              'Data updated: Gas Level = $gasLevel, Voltage = $voltage, Timestamp = $timestamp');
-        } else {
-          setState(() {
-            isLoading = false;
-            gasLevel = 'No data';
-            voltage = 'No data';
-            timestamp = 'No data';
-          });
-          print('No data available from the API.');
-        }
+        List<dynamic> data = json.decode(response.body);
+
+        setState(() {
+          gasLevel = data.isNotEmpty
+              ? double.parse(data[0]['gasLevel'].toString())
+              : 0.0;
+          sensorData = data;
+          isLoading = false;
+        });
       } else {
-        throw Exception('Failed to load data');
+        throw Exception('Failed to fetch data');
       }
     } catch (e) {
       setState(() {
+        gasLevel = 0.0;
+        sensorData = [];
         isLoading = false;
-        gasLevel = 'Error';
-        voltage = 'Error';
-        timestamp = 'Error';
-      });
-      print('Error fetching data: $e');
-    } finally {
-      setState(() {
-        isRefreshing = false;
       });
     }
   }
@@ -85,7 +69,7 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
   void initState() {
     super.initState();
     fetchData();
-    timer = Timer.periodic(Duration(seconds: 10), (Timer t) => fetchData());
+    timer = Timer.periodic(const Duration(seconds: 10), (Timer t) => fetchData());
   }
 
   @override
@@ -97,34 +81,31 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Data Sensor MQ-135'),
-      ),
+      backgroundColor: Colors.black, // Background warna hitam
       body: Center(
         child: isLoading
-            ? CircularProgressIndicator()
+            ? const CircularProgressIndicator()
             : Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    if (isRefreshing) ...[
-                      Text(
-                        'Refreshing data...',
-                        style: TextStyle(color: Colors.orange, fontSize: 16),
+                  children: [
+                    // Baterai Visualization
+                    Text(
+                      'Gas Level: ${gasLevel.toStringAsFixed(1)}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      SizedBox(height: 10),
-                    ],
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildBox('Gas Level', gasLevel),
-                        _buildBox('Voltage', voltage),
-                      ],
                     ),
-                    SizedBox(height: 15),
-                    _buildBox('Timestamp', timestamp, isLarge: true),
+                    const SizedBox(height: 20),
+                    _buildBatteryIndicator(),
+                    const SizedBox(height: 30),
+
+                    // Tabel Scrollable
+                    Expanded(
+                      child: _buildScrollableTable(),
+                    ),
                   ],
                 ),
               ),
@@ -132,33 +113,88 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
     );
   }
 
-  // Fungsi untuk membuat box
-  Widget _buildBox(String title, String value, {bool isLarge = false}) {
-    return Container(
-      padding: EdgeInsets.all(20),
-      width: isLarge ? double.infinity : 150,
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.blue, width: 2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
+  Widget _buildBatteryIndicator() {
+    double batteryHeight = 200.0;
+    double batteryWidth = 100.0;
+    double levelHeight = (gasLevel / 300) * batteryHeight;
+
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        Container(
+          height: batteryHeight,
+          width: batteryWidth,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.green, width: 3),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          height: levelHeight,
+          width: batteryWidth - 6,
+          decoration: BoxDecoration(
+            color: gasLevel > 100
+                ? Colors.red
+                : gasLevel > 60
+                    ? Colors.yellow
+                    : Colors.green,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(7)),
+          ),
+        ),
+        Positioned(
+          top: -10,
+          child: Container(
+            height: 10,
+            width: batteryWidth / 2,
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(5),
             ),
           ),
-          SizedBox(height: 10),
-          Text(
-            value,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScrollableTable() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical, 
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal, 
+        child: DataTable(
+          columnSpacing: 20,
+          // ignore: deprecated_member_use
+          headingRowColor: MaterialStateProperty.all(Colors.green[700]),
+          columns: const [
+            DataColumn(
+              label: Text(
+                'Timestamp',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Gas Level',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+            ),
+          ],
+          rows: sensorData.map((data) {
+            return DataRow(cells: [
+              DataCell(Text(data['timestamp'],
+                  style: const TextStyle(color: Colors.white))),
+              DataCell(Text(data['gasLevel'].toString(),
+                  style: const TextStyle(color: Colors.white))),
+            ]);
+          }).toList(),
+        ),
       ),
     );
   }

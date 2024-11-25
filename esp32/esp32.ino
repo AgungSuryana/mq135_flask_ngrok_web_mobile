@@ -1,22 +1,17 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-#define WIFI_SSID "AGUNG"            // Ganti dengan SSID Wi-Fi kamu
-#define WIFI_PASSWORD "agungsuryana18"    // Ganti dengan password Wi-Fi kamu
+#define WIFI_SSID "AGUNG"            
+#define WIFI_PASSWORD "agungsuryana18"  
 
-// Pin sensor MQ-135
-#define MQ135_PIN 34  // Pin untuk sensor MQ-135 (sesuaikan dengan pin yang digunakan)
+#define MQ135_PIN 34  
 
 // URL API Flask (ganti dengan URL NGROK atau server Flask lokal)
-const char* serverUrl = "https://e455-125-164-21-68.ngrok-free.app/api/sensor";  // Ganti dengan URL NGROK atau IP server Flask
+const char* serverUrl = "https://f580-125-164-25-162.ngrok-free.app/api/sensor";  
 
 void setup() {
   Serial.begin(115200);
-
-  // Menghubungkan ke Wi-Fi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  
-  // Menunggu koneksi Wi-Fi
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Mencoba terhubung ke WiFi...");
@@ -25,32 +20,31 @@ void setup() {
 }
 
 void loop() {
-  // Memeriksa status koneksi Wi-Fi
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-
-    // Membaca nilai sensor MQ-135
-    int gasLevel = analogRead(MQ135_PIN);  // Membaca nilai analog dari sensor MQ-135
-    float voltage = gasLevel * (3.3 / 1023.0);  // Menghitung tegangan (0-3.3V)
+    int gasLevel = analogRead(MQ135_PIN);  
+    Serial.print("Gas Level yang dikirim: ");
+    Serial.println(gasLevel);
 
     // Membuat objek JSON untuk dikirimkan ke Flask
-    String jsonData = "{\"gasLevel\": " + String(gasLevel) + ", \"voltage\": " + String(voltage) + "}";
+    String jsonData = "{\"gasLevel\": " + String(gasLevel) + "}";
 
     // Mengirim data ke server Flask
-    http.begin(serverUrl);  // Tentukan URL endpoint API Flask
-    http.addHeader("Content-Type", "application/json");  // Header untuk JSON
+    http.begin(serverUrl);  
+    http.addHeader("Content-Type", "application/json");  
 
-    int httpResponseCode = http.POST(jsonData);  // Mengirim data ke server Flask
+    int httpResponseCode = http.POST(jsonData); 
 
     if (httpResponseCode == 200) {
       Serial.println("Data berhasil dikirim!");
     } else {
-      Serial.println("Gagal mengirim data");
+      Serial.print("Gagal mengirim data. Kode respons: ");
+      Serial.println(httpResponseCode);
     }
 
     http.end();
+  } else {
+    Serial.println("Tidak terhubung ke WiFi!");
   }
-
-  // Delay 10 detik sebelum mengirim data lagi
   delay(10000);
 }
