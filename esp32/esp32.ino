@@ -7,7 +7,7 @@
 #define MQ135_PIN 34  
 
 // URL API Flask (ganti dengan URL NGROK atau server Flask lokal)
-const char* serverUrl = "https://f580-125-164-25-162.ngrok-free.app/api/sensor";  
+const char* serverUrl = "https://072f-125-164-20-239.ngrok-free.app/api/sensor";  
 
 void setup() {
   Serial.begin(115200);

@@ -1,7 +1,9 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'history.dart';
+import 'dart:async';
+import 'chart_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,11 +16,60 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Dynamic Battery Visualization',
-      debugShowCheckedModeBanner: false, // Menghilangkan logo debug
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: const SensorDataScreen(),
+      home: const MainScreen(),
+    );
+  }
+}
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  _MainScreenState createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = [
+    const SensorDataScreen(),
+    const HistoryPage(),
+    const ChartPage(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        selectedItemColor: Colors.green,
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.black,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.battery_std),
+            label: 'Visualization',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Chart', // Tambahkan menu Chart
+          ),
+        ],
+      ),
     );
   }
 }
@@ -27,20 +78,18 @@ class SensorDataScreen extends StatefulWidget {
   const SensorDataScreen({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _SensorDataScreenState createState() => _SensorDataScreenState();
 }
 
 class _SensorDataScreenState extends State<SensorDataScreen> {
   double gasLevel = 0.0;
-  List<dynamic> sensorData = [];
   bool isLoading = true;
   Timer? timer;
 
   Future<void> fetchData() async {
     try {
       final response = await http.get(
-        Uri.parse('https://f580-125-164-25-162.ngrok-free.app/api/data'),
+        Uri.parse('https://072f-125-164-20-239.ngrok-free.app/api/data'),
       );
 
       if (response.statusCode == 200) {
@@ -50,7 +99,6 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
           gasLevel = data.isNotEmpty
               ? double.parse(data[0]['gasLevel'].toString())
               : 0.0;
-          sensorData = data;
           isLoading = false;
         });
       } else {
@@ -59,7 +107,6 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
     } catch (e) {
       setState(() {
         gasLevel = 0.0;
-        sensorData = [];
         isLoading = false;
       });
     }
@@ -69,11 +116,14 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
   void initState() {
     super.initState();
     fetchData();
-    timer = Timer.periodic(const Duration(seconds: 10), (Timer t) => fetchData());
+    // Timer untuk melakukan polling data setiap 10 detik
+    timer =
+        Timer.periodic(const Duration(seconds: 10), (Timer t) => fetchData());
   }
 
   @override
   void dispose() {
+    // Hentikan timer saat widget dihapus
     timer?.cancel();
     super.dispose();
   }
@@ -81,33 +131,24 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Background warna hitam
+      backgroundColor: Colors.black,
       body: Center(
         child: isLoading
             ? const CircularProgressIndicator()
-            : Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    // Baterai Visualization
-                    Text(
-                      'Gas Level: ${gasLevel.toStringAsFixed(1)}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Gas Level: ${gasLevel.toStringAsFixed(1)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                    const SizedBox(height: 20),
-                    _buildBatteryIndicator(),
-                    const SizedBox(height: 30),
-
-                    // Tabel Scrollable
-                    Expanded(
-                      child: _buildScrollableTable(),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildBatteryIndicator(),
+                ],
               ),
       ),
     );
@@ -139,7 +180,8 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
                 : gasLevel > 60
                     ? Colors.yellow
                     : Colors.green,
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(7)),
+            borderRadius:
+                const BorderRadius.vertical(bottom: Radius.circular(7)),
           ),
         ),
         Positioned(
@@ -154,48 +196,6 @@ class _SensorDataScreenState extends State<SensorDataScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildScrollableTable() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical, 
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal, 
-        child: DataTable(
-          columnSpacing: 20,
-          // ignore: deprecated_member_use
-          headingRowColor: MaterialStateProperty.all(Colors.green[700]),
-          columns: const [
-            DataColumn(
-              label: Text(
-                'Timestamp',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white),
-              ),
-            ),
-            DataColumn(
-              label: Text(
-                'Gas Level',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white),
-              ),
-            ),
-          ],
-          rows: sensorData.map((data) {
-            return DataRow(cells: [
-              DataCell(Text(data['timestamp'],
-                  style: const TextStyle(color: Colors.white))),
-              DataCell(Text(data['gasLevel'].toString(),
-                  style: const TextStyle(color: Colors.white))),
-            ]);
-          }).toList(),
-        ),
-      ),
     );
   }
 }
